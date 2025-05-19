@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng Cửa sổ (Mobile Friendly) - Thư mục (Tương tác)</title>
+<style>
+  /* General body styling - GIỮ NGUYÊN */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  /* Window container styling - GIỮ NGUYÊN */
+  .window {
+    width: 100%;
+    max-width: 700px;
+    height: 85vh;
+    max-height: 600px;
+    background-color: #ffffff;
+    border: 1px solid #a0a0a0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Title bar styling - GIỮ NGUYÊN */
+  .title-bar {
+    background-color: #f0f0f0;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .title-bar .title {
+    font-weight: bold;
+    font-size: 1em;
+    color: #333333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 10px;
+  }
+
+  /* Window controls (minimize, maximize, close) - GIỮ NGUYÊN */
+  .window-controls {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .window-controls button {
+    background-color: transparent;
+    border: none;
+    padding: 8px 10px;
+    margin-left: 4px;
+    font-size: 1em;
+    cursor: pointer;
+    color: #333333;
+    border-radius: 4px;
+  }
+
+  .window-controls button:hover,
+  .window-controls button:active {
+    background-color: #e0e0e0;
+  }
+
+  .window-controls .close:hover,
+  .window-controls .close:active {
+    background-color: #e81123;
+    color: white;
+  }
+
+  /* Window content area - GIỮ NGUYÊN */
+  .window-content {
+    padding: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    color: #333333;
+  }
+
+  /* File explorer list styling - GIỮ NGUYÊN */
+  .file-explorer {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .file-explorer li {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer; /* Thay đổi thành pointer để cho biết có thể nhấp */
+    font-size: 0.95em;
+  }
+
+  .file-explorer li:last-child {
+    border-bottom: none;
+  }
+
+  .file-explorer li:hover {
+    background-color: #f5f5f5;
+  }
+
+  .file-explorer .icon {
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
+    font-size: 1.2em;
+  }
+
+  .icon-folder::before { content: "📁"; color: #FFD700; }
+  .icon-image::before { content: "🖼️"; }
+  .icon-text::before { content: "📄"; }
+  .icon-generic-file::before { content: "▪️"; }
+
+  .file-explorer .file-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-explorer .file-type,
+  .file-explorer .file-size {
+    font-size: 0.85em;
+    color: #666;
+    margin-left: 15px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .file-explorer-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #ccc;
+    background-color: #f9f9f9;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #333;
+    cursor: default; /* Header không cần click */
+  }
+  .file-explorer-header .file-name { flex-grow: 1; }
+  .file-explorer-header .file-type { width: 100px; text-align: left; margin-left: calc(12px + 15px); }
+  .file-explorer-header .file-size { width: 80px; text-align: right;}
+
+  .icon-minimize::before { content: "—"; font-weight: bold; }
+  .icon-maximize::before { content: "□"; font-weight: bold; }
+  .icon-close::before { content: "✕"; font-weight: bold; }
+
+  @media (max-width: 600px) {
+    .file-explorer .file-type,
+    .file-explorer .file-size { display: none; }
+    .file-explorer-header .file-type,
+    .file-explorer-header .file-size { display: none; }
+    .file-explorer li { padding: 12px 10px; }
+    .file-explorer .icon { margin-right: 8px; }
+    .file-explorer-header .file-name { margin-left: 8px; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 5px; }
+    .window { height: 90vh; max-height: none; border-radius: 5px; }
+    .title-bar { padding: 8px 10px; }
+    .title-bar .title { font-size: 0.9em; }
+    .window-controls button { padding: 6px 8px; font-size: 0.9em; }
+  }
+
+  .window.maximized-window {
+    width: 100vw !important; height: 100vh !important; top: 0 !important; left: 0 !important;
+    max-width: none !important; max-height: none !important; border-radius: 0 !important;
+    position: fixed !important; z-index: 1000;
+  }
+
+  /* === CSS MỚI CHO MODAL === */
+  .modal-overlay {
+    position: fixed; /* Che phủ toàn bộ màn hình */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Nền mờ */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Đảm bảo modal ở trên cùng */
+    opacity: 0; /* Ẩn ban đầu */
+    visibility: hidden; /* Ẩn ban đầu */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .modal-content {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 500px; /* Giới hạn chiều rộng modal */
+    max-height: 80vh; /* Giới hạn chiều cao modal */
+    overflow-y: auto; /* Thêm cuộn nếu nội dung dài */
+    position: relative;
+    transform: scale(0.9); /* Hiệu ứng vào */
+    transition: transform 0.3s ease;
+  }
+
+  .modal-overlay.active .modal-content {
+    transform: scale(1);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+
+  .modal-title {
+    font-size: 1.25em;
+    font-weight: bold;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+  }
+   .modal-close-btn:hover {
+    color: #333;
+   }
+
+  .modal-body img {
+    max-width: 100%; /* Hình ảnh vừa với modal */
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 4px;
+  }
+
+  .modal-body p {
+    line-height: 1.6;
+    white-space: pre-wrap; /* Giữ nguyên định dạng xuống dòng của text */
+  }
+
+  .modal-body input[type="password"],
+  .modal-body input[type="text"] { /* Áp dụng cho cả text input nếu cần */
+    width: calc(100% - 22px); /* Full width trừ padding */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+  }
+
+  .modal-body button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+  }
+  .modal-body button:hover {
+    background-color: #0056b3;
+  }
+  .password-error {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+  }
+  /* === KẾT THÚC CSS MODAL === */
+
+</style>
+</head>
+<body>
+
+<div class="window" id="myWindow">
+  <div class="title-bar" id="myWindowTitleBar">
+    <div class="title">Tài liệu của tôi</div>
+    <div class="window-controls">
+      <button class="minimize" aria-label="Thu nhỏ"><span class="icon-minimize"></span></button>
+      <button class="maximize" aria-label="Phóng to"><span class="icon-maximize"></span></button>
+      <button class="close" aria-label="Đóng"><span class="icon-close"></span></button>
+    </div>
+  </div>
+  <div class="window-content">
+    <div class="file-explorer-header">
+        <span class="icon"></span>
+        <span class="file-name">Tên</span>
+        <span class="file-type">Loại</span>
+        <span class="file-size">Kích thước</span>
+    </div>
+
+    <ul class="file-explorer">
+      <li data-file-type="image" data-file-name="Ảnh cưới.jpg">
+        <span class="icon icon-image"></span>
+        <span class="file-name">Ảnh cưới.jpg</span>
+        <span class="file-type">Hình ảnh JPG</span>
+        <span class="file-size">2.3 MB</span>
+      </li>
+      <li data-file-type="text" data-file-name="Mr.Teatime.txt">
+        <span class="icon icon-text"></span>
+        <span class="file-name">Mr.Teatime.txt</span>
+        <span class="file-type">Tài liệu văn bản</span>
+        <span class="file-size">15 KB</span>
+      </li>
+      <li data-file-type="docx" data-file-name="Rosa-Diaz.docx" data-requires-password="true">
+        <span class="icon icon-text"></span>
+        <span class="file-name">Rosa-Diaz.docx</span>
+        <span class="file-type">Tài liệu Word</span>
+        <span class="file-size">1.1 MB</span>
+      </li>
+      <li data-file-type="folder"> <span class="icon icon-folder"></span>
+        <span class="file-name">Mục lưu trữ</span>
+        <span class="file-type">Thư mục</span>
+        <span class="file-size">--</span>
+      </li>
+       <li data-file-type="script" data-file-name="tap_tin_sao_luu.sh">
+        <span class="icon icon-generic-file"></span>
+        <span class="file-name">tap_tin_sao_luu.sh</span>
+        <span class="file-type">Tập tin SH</span>
+        <span class="file-size">5 KB</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="modal-overlay" id="fileModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">Tiêu đề Modal</h2>
+      <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      </div>
+  </div>
+</div>
+
+
+<script>
+  // Get references to DOM elements - GIỮ NGUYÊN PHẦN NÀY
+  const myWindow = document.getElementById('myWindow');
+  const titleBar = document.getElementById('myWindowTitleBar');
+  const minimizeButton = myWindow.querySelector('.minimize');
+  const maximizeButton = myWindow.querySelector('.maximize');
+  const closeButton = myWindow.querySelector('.close');
+
+  const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  if (!isTouchDevice()) {
+    titleBar.style.cursor = 'move';
+    let isDragging = false;
+    let offsetX, offsetY;
+    titleBar.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || e.target.closest('.window-controls button')) return;
+      isDragging = true;
+      const rect = myWindow.getBoundingClientRect();
+      if (getComputedStyle(myWindow).position === 'fixed' || getComputedStyle(myWindow).position === 'absolute') {
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+      } else {
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+          if (getComputedStyle(myWindow).position === 'static') {
+            myWindow.style.position = 'relative';
+          }
+      }
+      document.body.style.userSelect = 'none';
+      myWindow.style.cursor = 'grabbing';
+    });
+    document.addEventListener('mousemove', (e) => {
+      // Dragging logic is complex with flex centering, simplified here
+      if (!isDragging) return;
+      // console.log("Dragging, position update might be needed based on window's CSS position.")
+    });
+    document.addEventListener('mouseup', (e) => {
+      if (e.button !== 0 || !isDragging) return;
+      isDragging = false;
+      document.body.style.userSelect = '';
+      myWindow.style.cursor = 'default';
+      if (titleBar.style.cursor !== 'move') {
+        titleBar.style.cursor = 'move';
+      }
+    });
+  }
+
+  minimizeButton.addEventListener('click', () => {
+    alert('Thu nhỏ (chức năng chưa được triển khai)');
+  });
+  maximizeButton.addEventListener('click', () => {
+    const isMaximized = myWindow.classList.contains('maximized-window');
+    if (!isMaximized) {
+        myWindow.dataset.oldPosition = getComputedStyle(myWindow).position;
+        myWindow.dataset.oldTop = myWindow.style.top;
+        myWindow.dataset.oldLeft = myWindow.style.left;
+        myWindow.dataset.oldWidth = myWindow.style.width;
+        myWindow.dataset.oldHeight = myWindow.style.height;
+        myWindow.dataset.oldMaxWidth = myWindow.style.maxWidth;
+        myWindow.dataset.oldMaxHeight = myWindow.style.maxHeight;
+        myWindow.dataset.oldBorderRadius = myWindow.style.borderRadius;
+        myWindow.classList.add('maximized-window');
+    } else {
+        myWindow.classList.remove('maximized-window');
+        myWindow.style.position = myWindow.dataset.oldPosition || 'relative';
+        myWindow.style.top = myWindow.dataset.oldTop || '';
+        myWindow.style.left = myWindow.dataset.oldLeft || '';
+        myWindow.style.width = myWindow.dataset.oldWidth || '100%';
+        myWindow.style.height = myWindow.dataset.oldHeight || '85vh';
+        myWindow.style.maxWidth = myWindow.dataset.oldMaxWidth || '700px';
+        myWindow.style.maxHeight = myWindow.dataset.oldMaxHeight || '600px';
+        myWindow.style.borderRadius = myWindow.dataset.oldBorderRadius || '8px';
+    }
+  });
+  closeButton.addEventListener('click', () => {
+    if (confirm('Bạn có chắc muốn đóng cửa sổ này?')) {
+      myWindow.style.display = 'none';
+    }
+  });
+
+  // === JAVASCRIPT MỚI CHO CHỨC NĂNG MỞ FILE VÀ MODAL ===
+  const fileModal = document.getElementById('fileModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalBody = document.getElementById('modalBody');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  const fileItems = document.querySelectorAll('.file-explorer li[data-file-type]');
+
+  const CORRECT_PASSWORD = "123"; // Mật khẩu mẫu
+  const ROSA_MESSAGE = "Đây là lần cuối tôi gửi tin cho ông, từ mai tôi sẽ nghỉ việc ở sở cảnh sát\nke-hoach-trien-khai-luc-luong-TUYET-MAT.docx";
+
+  function openModal() {
+    fileModal.classList.add('active');
+  }
+
+  function closeModal() {
+    fileModal.classList.remove('active');
+    modalBody.innerHTML = ''; // Xóa nội dung cũ của modal khi đóng
+  }
+
+  modalCloseBtn.addEventListener('click', closeModal);
+  fileModal.addEventListener('click', (event) => { // Đóng modal khi nhấp vào overlay
+    if (event.target === fileModal) {
+      closeModal();
+    }
+  });
+
+  fileItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const fileType = item.dataset.fileType;
+      const fileName = item.dataset.fileName;
+      const requiresPassword = item.dataset.requiresPassword === 'true';
+
+      modalTitle.textContent = fileName; // Đặt tiêu đề modal là tên file
+
+      if (requiresPassword) {
+        showPasswordPrompt(fileName);
+      } else {
+        displayFileContent(fileType, fileName);
+      }
+    });
+  });
+
+  function displayFileContent(fileType, fileName) {
+    modalBody.innerHTML = ''; // Xóa nội dung cũ
+    switch (fileType) {
+      case 'image':
+        // Sử dụng placeholder image vì không có ảnh thực tế
+        const img = document.createElement('img');
+        img.src = `https://placehold.co/400x300/E6E6E6/666666?text=${encodeURIComponent(fileName)}`;
+        img.alt = fileName;
+        modalBody.appendChild(img);
+        break;
+      case 'text':
+        const pText = document.createElement('p');
+        pText.textContent = `Đi lại, sử dụng thiết bị đổi giọng (giọng địa phương?), nhận tiền gửi ra nước ngoài, và kiêu ngạo`;
+        modalBody.appendChild(pText);
+        break;
+      case 'docx': // Trường hợp này là sau khi đã nhập đúng mật khẩu
+        const pDocx = document.createElement('p');
+        pDocx.textContent = `Đây là nội dung của tài liệu "${fileName}" sau khi nhập mật khẩu.\n\"${ROSA_MESSAGE}".`;
+        modalBody.appendChild(pDocx);
+        break;
+      default:
+        const pDefault = document.createElement('p');
+        pDefault.textContent = `Không thể hiển thị loại tệp này (${fileName}).`;
+        modalBody.appendChild(pDefault);
+    }
+    openModal();
+  }
+
+  function showPasswordPrompt(fileNameForDocx) {
+    modalBody.innerHTML = `
+      <p>Tệp "${fileNameForDocx}" yêu cầu mật khẩu để mở.</p>
+      <input type="password" id="passwordInput" placeholder="Nhập mật khẩu">
+      <button id="submitPasswordBtn">Mở</button>
+      <div id="passwordErrorMsg" class="password-error"></div>
+    `;
+
+    const passwordInput = document.getElementById('passwordInput');
+    const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+    const passwordErrorMsg = document.getElementById('passwordErrorMsg');
+
+    submitPasswordBtn.addEventListener('click', () => {
+      if (passwordInput.value === CORRECT_PASSWORD) {
+        passwordErrorMsg.textContent = '';
+        displayFileContent('docx', fileNameForDocx); // Hiển thị nội dung docx
+      } else {
+        passwordErrorMsg.textContent = 'Mật khẩu không đúng. Vui lòng thử lại.';
+        passwordInput.focus();
+      }
+    });
+    // Cho phép nhấn Enter để submit mật khẩu
+    passwordInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Ngăn hành vi mặc định của Enter (nếu có)
+            submitPasswordBtn.click(); // Kích hoạt sự kiện click của nút Mở
+        }
+    });
+
+
+    openModal();
+    passwordInput.focus(); // Tự động focus vào ô mật khẩu
+  }
+
+  // Đóng modal bằng phím Escape
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && fileModal.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+</script>
+
+</body>
+</html>
