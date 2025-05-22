@@ -1,558 +1,493 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mô phỏng Cửa sổ (Mobile Friendly) - Thư mục (Tương tác)</title>
-<style>
-  /* General body styling - GIỮ NGUYÊN */
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    padding: 10px;
-    box-sizing: border-box;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows Desktop Simulator</title>
+    <style>
+        :root {
+            --primary-color: #0078D4;
+            --light-gray: #F0F0F0;
+            --medium-gray: #CCCCCC;
+            --dark-gray: #333333;
+            --icon-size: 60px;
+            --icon-font-size: 12px;
+            --taskbar-height: 40px;
+        }
 
-  /* Window container styling - GIỮ NGUYÊN */
-  .window {
-    width: 100%;
-    max-width: 700px;
-    height: 85vh;
-    max-height: 600px;
-    background-color: #ffffff;
-    border: 1px solid #a0a0a0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-  }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--primary-color);
+            color: var(--dark-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-  /* Title bar styling - GIỮ NGUYÊN */
-  .title-bar {
-    background-color: #f0f0f0;
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #cccccc;
-  }
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-  .title-bar .title {
-    font-weight: bold;
-    font-size: 1em;
-    color: #333333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-right: 10px;
-  }
+        .password-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 300px;
+            width: 100%;
+        }
 
-  /* Window controls (minimize, maximize, close) - GIỮ NGUYÊN */
-  .window-controls {
-    display: flex;
-    flex-shrink: 0;
-  }
+        .password-box h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
 
-  .window-controls button {
-    background-color: transparent;
-    border: none;
-    padding: 8px 10px;
-    margin-left: 4px;
-    font-size: 1em;
-    cursor: pointer;
-    color: #333333;
-    border-radius: 4px;
-  }
+        .password-box input[type="password"],
+        .password-box input[type="text"] { /* Changed to text for docx for simplicity */
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            font-size: 16px;
+        }
 
-  .window-controls button:hover,
-  .window-controls button:active {
-    background-color: #e0e0e0;
-  }
+        .password-box button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
 
-  .window-controls .close:hover,
-  .window-controls .close:active {
-    background-color: #e81123;
-    color: white;
-  }
+        .password-box button:hover {
+            background-color: #005a9e;
+        }
 
-  /* Window content area - GIỮ NGUYÊN */
-  .window-content {
-    padding: 0;
-    flex-grow: 1;
-    overflow-y: auto;
-    color: #333333;
-  }
+        .password-error {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            min-height: 20px; /* Reserve space */
+        }
 
-  /* File explorer list styling - GIỮ NGUYÊN */
-  .file-explorer {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
+        #desktop {
+            width: 100%;
+            height: 100vh;
+            background-image: url('https://img.freepik.com/free-vector/blue-dynamic-lines-background_1017-32660.jpg'); /* Placeholder wallpaper */
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            padding-top: 20px; /* Space for icons */
+            padding-left: 20px;
+            box-sizing: border-box;
+            display: none; /* Hidden initially */
+        }
 
-  .file-explorer li {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer; /* Thay đổi thành pointer để cho biết có thể nhấp */
-    font-size: 0.95em;
-  }
+        .icons-container {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 20px;
+            max-height: calc(100vh - var(--taskbar-height) - 40px); /* Adjust based on padding */
+        }
 
-  .file-explorer li:last-child {
-    border-bottom: none;
-  }
+        .icon {
+            width: var(--icon-size);
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
 
-  .file-explorer li:hover {
-    background-color: #f5f5f5;
-  }
+        .icon:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
 
-  .file-explorer .icon {
-    margin-right: 12px;
-    width: 20px;
-    text-align: center;
-    font-size: 1.2em;
-  }
+        .icon img {
+            width: 100%;
+            height: auto;
+            margin-bottom: 5px;
+        }
 
-  .icon-folder::before { content: "📁"; color: #FFD700; }
-  .icon-image::before { content: "🖼️"; }
-  .icon-text::before { content: "📄"; }
-  .icon-generic-file::before { content: "▪️"; }
+        .icon span {
+            color: white;
+            font-size: var(--icon-font-size);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            word-wrap: break-word;
+            display: block;
+        }
 
-  .file-explorer .file-name {
-    flex-grow: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--taskbar-height);
+            background-color: rgba(0, 50, 100, 0.9); /* Darker blue, slightly transparent */
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+            z-index: 500;
+        }
 
-  .file-explorer .file-type,
-  .file-explorer .file-size {
-    font-size: 0.85em;
-    color: #666;
-    margin-left: 15px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
+        .start-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
 
-  .file-explorer-header {
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid #ccc;
-    background-color: #f9f9f9;
-    font-weight: bold;
-    font-size: 0.9em;
-    color: #333;
-    cursor: default; /* Header không cần click */
-  }
-  .file-explorer-header .file-name { flex-grow: 1; }
-  .file-explorer-header .file-type { width: 100px; text-align: left; margin-left: calc(12px + 15px); }
-  .file-explorer-header .file-size { width: 80px; text-align: right;}
+        .clock {
+            color: white;
+            margin-left: auto;
+            font-size: 13px;
+            padding-right: 10px;
+        }
 
-  .icon-minimize::before { content: "—"; font-weight: bold; }
-  .icon-maximize::before { content: "□"; font-weight: bold; }
-  .icon-close::before { content: "✕"; font-weight: bold; }
+        /* Modal (Window) Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 600;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
 
-  @media (max-width: 600px) {
-    .file-explorer .file-type,
-    .file-explorer .file-size { display: none; }
-    .file-explorer-header .file-type,
-    .file-explorer-header .file-size { display: none; }
-    .file-explorer li { padding: 12px 10px; }
-    .file-explorer .icon { margin-right: 8px; }
-    .file-explorer-header .file-name { margin-left: 8px; }
-  }
+        .modal-content {
+            background-color: var(--light-gray);
+            margin: auto;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px 5px 0 0; /* Rounded top corners */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            max-height: 80vh;
+            width: 80%;
+            max-width: 600px;
+        }
 
-  @media (max-width: 480px) {
-    body { padding: 5px; }
-    .window { height: 90vh; max-height: none; border-radius: 5px; }
-    .title-bar { padding: 8px 10px; }
-    .title-bar .title { font-size: 0.9em; }
-    .window-controls button { padding: 6px 8px; font-size: 0.9em; }
-  }
+        .modal-header {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px 4px 0 0;
+            cursor: move; /* For potential dragging later */
+        }
 
-  .window.maximized-window {
-    width: 100vw !important; height: 100vh !important; top: 0 !important; left: 0 !important;
-    max-width: none !important; max-height: none !important; border-radius: 0 !important;
-    position: fixed !important; z-index: 1000;
-  }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
 
-  /* === CSS MỚI CHO MODAL === */
-  .modal-overlay {
-    position: fixed; /* Che phủ toàn bộ màn hình */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Nền mờ */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000; /* Đảm bảo modal ở trên cùng */
-    opacity: 0; /* Ẩn ban đầu */
-    visibility: hidden; /* Ẩn ban đầu */
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-  }
+        .close-button {
+            color: white;
+            background-color: #E81123;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        .close-button:hover {
+            background-color: #c70f1e;
+        }
 
-  .modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-  }
+        .modal-body {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1; /* Allows body to take available space */
+            background-color: white;
+        }
 
-  .modal-content {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    width: 90%;
-    max-width: 500px; /* Giới hạn chiều rộng modal */
-    max-height: 80vh; /* Giới hạn chiều cao modal */
-    overflow-y: auto; /* Thêm cuộn nếu nội dung dài */
-    position: relative;
-    transform: scale(0.9); /* Hiệu ứng vào */
-    transition: transform 0.3s ease;
-  }
+        .modal-body img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
 
-  .modal-overlay.active .modal-content {
-    transform: scale(1);
-  }
+        .modal-body pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: Consolas, 'Courier New', monospace;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+        }
 
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-  }
+        /* Specific modal for DOCX password */
+        #docxPasswordModal .password-box {
+             margin: auto; /* Center in modal */
+        }
 
-  .modal-title {
-    font-size: 1.25em;
-    font-weight: bold;
-  }
 
-  .modal-close-btn {
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    cursor: pointer;
-    color: #888;
-    line-height: 1;
-  }
-   .modal-close-btn:hover {
-    color: #333;
-   }
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            :root {
+                --icon-size: 50px;
+                --icon-font-size: 10px;
+                --taskbar-height: 45px; /* Slightly taller for easier tap */
+            }
 
-  .modal-body img {
-    max-width: 100%; /* Hình ảnh vừa với modal */
-    height: auto;
-    display: block;
-    margin: 0 auto;
-    border-radius: 4px;
-  }
+            .icons-container {
+                padding-top: 10px;
+                padding-left: 10px;
+                gap: 15px;
+                justify-content: flex-start; /* Align icons to the start on mobile */
+                flex-direction: row; /* Horizontal scroll for icons if many */
+                overflow-x: auto; /* Allow horizontal scrolling for icons */
+                padding-bottom: 10px; /* Space for scrollbar */
+            }
 
-  .modal-body p {
-    line-height: 1.6;
-    white-space: pre-wrap; /* Giữ nguyên định dạng xuống dòng của text */
-  }
+            .icon {
+                flex-shrink: 0; /* Prevent icons from shrinking */
+            }
 
-  .modal-body input[type="password"],
-  .modal-body input[type="text"] { /* Áp dụng cho cả text input nếu cần */
-    width: calc(100% - 22px); /* Full width trừ padding */
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1em;
-  }
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+            }
 
-  .modal-body button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.2s ease;
-  }
-  .modal-body button:hover {
-    background-color: #0056b3;
-  }
-  .password-error {
-    color: red;
-    font-size: 0.9em;
-    margin-top: 5px;
-  }
-  /* === KẾT THÚC CSS MODAL === */
-
-</style>
+            .modal-header h2 {
+                font-size: 14px;
+            }
+            .close-button {
+                font-size: 14px;
+                padding: 3px 8px;
+            }
+            .modal-body {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div class="window" id="myWindow">
-  <div class="title-bar" id="myWindowTitleBar">
-    <div class="title">Tài liệu của tôi</div>
-    <div class="window-controls">
-      <button class="minimize" aria-label="Thu nhỏ"><span class="icon-minimize"></span></button>
-      <button class="maximize" aria-label="Phóng to"><span class="icon-maximize"></span></button>
-      <button class="close" aria-label="Đóng"><span class="icon-close"></span></button>
-    </div>
-  </div>
-  <div class="window-content">
-    <div class="file-explorer-header">
-        <span class="icon"></span>
-        <span class="file-name">Tên</span>
-        <span class="file-type">Loại</span>
-        <span class="file-size">Kích thước</span>
+    <div class="password-overlay" id="initialPasswordOverlay">
+        <div class="password-box">
+            <h2>Truy cập Hệ thống</h2>
+            <input type="password" id="initialPasswordInput" placeholder="Nhập mật khẩu...">
+            <button onclick="checkInitialPassword()">Đăng nhập</button>
+            <p class="password-error" id="initialPasswordError"></p>
+        </div>
     </div>
 
-    <ul class="file-explorer">
-      <li data-file-type="image" data-file-name="Ảnh cưới.jpg">
-        <span class="icon icon-image"></span>
-        <span class="file-name">Ảnh cưới.jpg</span>
-        <span class="file-type">Hình ảnh JPG</span>
-        <span class="file-size">2.3 MB</span>
-      </li>
-      <li data-file-type="text" data-file-name="Mr.Teatime.txt">
-        <span class="icon icon-text"></span>
-        <span class="file-name">Mr.Teatime.txt</span>
-        <span class="file-type">Tài liệu văn bản</span>
-        <span class="file-size">15 KB</span>
-      </li>
-      <li data-file-type="docx" data-file-name="Rosa-Diaz.docx" data-requires-password="true">
-        <span class="icon icon-text"></span>
-        <span class="file-name">Rosa-Diaz.docx</span>
-        <span class="file-type">Tài liệu Word</span>
-        <span class="file-size">1.1 MB</span>
-      </li>
-      <li data-file-type="folder"> <span class="icon icon-folder"></span>
-        <span class="file-name">Mục lưu trữ</span>
-        <span class="file-type">Thư mục</span>
-        <span class="file-size">--</span>
-      </li>
-       <li data-file-type="script" data-file-name="tap_tin_sao_luu.sh">
-        <span class="icon icon-generic-file"></span>
-        <span class="file-name">tap_tin_sao_luu.sh</span>
-        <span class="file-type">Tập tin SH</span>
-        <span class="file-size">5 KB</span>
-      </li>
-    </ul>
-  </div>
-</div>
+    <div id="desktop">
+        <div class="icons-container">
+            <div class="icon" id="iconPicture" onclick="openPicture()">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIxMyAyIDE2IDIgMjEgNyIvPjxsaW5lIHgxPSIxNSIgeTE9IjIyIiB4Mj0iMTUiIHkyPSIxNSIvPjxsaW5lIHgxPSIxMiIgeTE9IjIyIiB4Mj0iMTIiIHkyPSIxOCIvPjxsaW5lIHgxPSI5IiB5MT0iMjIiIHgyPSI5IiB5Mj0iMTMiLz48cG9seWxpbmUgcG9pbnRzPSIyMSA5IDE4IDkgMTUgMTMiLz48L3N2Zz4=" alt="Picture Icon">
+                <span>wedding.jpg</span>
+            </div>
+            <div class="icon" id="iconText" onclick="openTextFile()">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMyAySDZhMiAyIDAgMCAwLTIgMnYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOXoiLz48cG9seWxpbmUgcG9pbnRzPSIxMyAyIDEzIDkgMjAgOSIvPjxsaW5lIHgxPSI4IiB5MT0iMTMiIHgyPSIxNiIgeTI9IjEzIi8+PGxpbmUgeDE9IjgiIHkxPSIxNyIgeDI9IjE2IiB5Mj0iMTciLz48L3N2Zz4=" alt="Text File Icon">
+                <span>Mr.teatime.txt</span>
+            </div>
+            <div class="icon" id="iconDocx" onclick="requestDocxPassword()">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNCAySDZhMiAyIDAgMCAwLTIgMnYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOXoiLz48cG9seWxpbmUgcG9pbnRzPSIxNCAyIDE0IDkgMjEgOSIvPjxwYXRoIGQ9Ik0xMC45NyA1NC40N2EyIDIgMCAwIDEgLTMuOTQgMEwxMCAxM2MwLS41NS40NS0xIDEtMWgxYTEgMSAwIDAgMSAxIDF6TTEzIDEzdjZoMWExIDEgMCAwIDAgMS0xdi00YTEgMSAwIDAgMC0xLTFoLTF6IiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+" alt="Docx File Icon">
+                <span>Secret.docx</span>
+            </div>
+        </div>
 
-<div class="modal-overlay" id="fileModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 class="modal-title" id="modalTitle">Tiêu đề Modal</h2>
-      <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+        <div class="taskbar">
+            <div class="start-button" onclick="alert('Nút Start đã được nhấp!')">Start</div>
+            <div class="clock" id="clock"></div>
+        </div>
     </div>
-    <div class="modal-body" id="modalBody">
-      </div>
-  </div>
-</div>
 
+    <div id="pictureModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>wedding.jpg</h2>
+                <button class="close-button" onclick="closeModal('pictureModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img src="./wedding.png" alt="Placeholder Image">
+                </div>
+        </div>
+    </div>
 
-<script>
-  // Get references to DOM elements - GIỮ NGUYÊN PHẦN NÀY
-  const myWindow = document.getElementById('myWindow');
-  const titleBar = document.getElementById('myWindowTitleBar');
-  const minimizeButton = myWindow.querySelector('.minimize');
-  const maximizeButton = myWindow.querySelector('.maximize');
-  const closeButton = myWindow.querySelector('.close');
+    <div id="textFileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Mr.teatime.txt</h2>
+                <button class="close-button" onclick="closeModal('textFileModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre>
+                  Đi lại, sử dụng thiết bị đổi giọng (giọng địa phương?), nhận tiền gửi ra nước ngoài, và kiêu ngạo
+                </pre>
+            </div>
+        </div>
+    </div>
 
-  const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    <div id="docxPasswordModal" class="modal password-overlay" style="background-color: rgba(0,0,0,0.7);"> <div class="password-box">
+            <h2>Mở Secret.docx</h2>
+            <p>File này được bảo vệ bằng mật khẩu.</p>
+            <input type="password" id="docxPasswordInput" placeholder="Nhập mật khẩu file...">
+            <button onclick="checkDocxPassword()">Mở File</button>
+            <p class="password-error" id="docxPasswordError"></p>
+            <button onclick="closeModal('docxPasswordModal')" style="background-color: var(--medium-gray); margin-top:10px;">Hủy</button>
+        </div>
+    </div>
 
-  if (!isTouchDevice()) {
-    titleBar.style.cursor = 'move';
-    let isDragging = false;
-    let offsetX, offsetY;
-    titleBar.addEventListener('mousedown', (e) => {
-      if (e.button !== 0 || e.target.closest('.window-controls button')) return;
-      isDragging = true;
-      const rect = myWindow.getBoundingClientRect();
-      if (getComputedStyle(myWindow).position === 'fixed' || getComputedStyle(myWindow).position === 'absolute') {
-          offsetX = e.clientX - rect.left;
-          offsetY = e.clientY - rect.top;
-      } else {
-          offsetX = e.clientX - rect.left;
-          offsetY = e.clientY - rect.top;
-          if (getComputedStyle(myWindow).position === 'static') {
-            myWindow.style.position = 'relative';
-          }
-      }
-      document.body.style.userSelect = 'none';
-      myWindow.style.cursor = 'grabbing';
-    });
-    document.addEventListener('mousemove', (e) => {
-      // Dragging logic is complex with flex centering, simplified here
-      if (!isDragging) return;
-      // console.log("Dragging, position update might be needed based on window's CSS position.")
-    });
-    document.addEventListener('mouseup', (e) => {
-      if (e.button !== 0 || !isDragging) return;
-      isDragging = false;
-      document.body.style.userSelect = '';
-      myWindow.style.cursor = 'default';
-      if (titleBar.style.cursor !== 'move') {
-        titleBar.style.cursor = 'move';
-      }
-    });
-  }
+    <div id="docxContentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Secret.docx</h2>
+                <button class="close-button" onclick="closeModal('docxContentModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre>
+--- NỘI DUNG FILE DOCX BÍ MẬT ---
 
-  minimizeButton.addEventListener('click', () => {
-    alert('Thu nhỏ (chức năng chưa được triển khai)');
-  });
-  maximizeButton.addEventListener('click', () => {
-    const isMaximized = myWindow.classList.contains('maximized-window');
-    if (!isMaximized) {
-        myWindow.dataset.oldPosition = getComputedStyle(myWindow).position;
-        myWindow.dataset.oldTop = myWindow.style.top;
-        myWindow.dataset.oldLeft = myWindow.style.left;
-        myWindow.dataset.oldWidth = myWindow.style.width;
-        myWindow.dataset.oldHeight = myWindow.style.height;
-        myWindow.dataset.oldMaxWidth = myWindow.style.maxWidth;
-        myWindow.dataset.oldMaxHeight = myWindow.style.maxHeight;
-        myWindow.dataset.oldBorderRadius = myWindow.style.borderRadius;
-        myWindow.classList.add('maximized-window');
-    } else {
-        myWindow.classList.remove('maximized-window');
-        myWindow.style.position = myWindow.dataset.oldPosition || 'relative';
-        myWindow.style.top = myWindow.dataset.oldTop || '';
-        myWindow.style.left = myWindow.dataset.oldLeft || '';
-        myWindow.style.width = myWindow.dataset.oldWidth || '100%';
-        myWindow.style.height = myWindow.dataset.oldHeight || '85vh';
-        myWindow.style.maxWidth = myWindow.dataset.oldMaxWidth || '700px';
-        myWindow.style.maxHeight = myWindow.dataset.oldMaxHeight || '600px';
-        myWindow.style.borderRadius = myWindow.dataset.oldBorderRadius || '8px';
-    }
-  });
-  closeButton.addEventListener('click', () => {
-    if (confirm('Bạn có chắc muốn đóng cửa sổ này?')) {
-      myWindow.style.display = 'none';
-    }
-  });
+Đây là lần cuối tôi làm việc nào cho ông.
+Ke-hoang-BI-MAT.docx.
+                </pre>
+            </div>
+        </div>
+    </div>
 
-  // === JAVASCRIPT MỚI CHO CHỨC NĂNG MỞ FILE VÀ MODAL ===
-  const fileModal = document.getElementById('fileModal');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalBody = document.getElementById('modalBody');
-  const modalCloseBtn = document.getElementById('modalCloseBtn');
-  const fileItems = document.querySelectorAll('.file-explorer li[data-file-type]');
+    <script>
+        const INITIAL_PASSWORD = "1975"; // Đặt mật khẩu truy cập ở đây
+        const DOCX_PASSWORD = "rose"; // Đặt mật khẩu file DOCX ở đây
 
-  const CORRECT_PASSWORD = "123"; // Mật khẩu mẫu
-  const ROSA_MESSAGE = "Đây là lần cuối tôi gửi tin cho ông, từ mai tôi sẽ nghỉ việc ở sở cảnh sát\nke-hoach-trien-khai-luc-luong-TUYET-MAT.docx";
+        const initialPasswordOverlay = document.getElementById('initialPasswordOverlay');
+        const desktop = document.getElementById('desktop');
+        const initialPasswordInput = document.getElementById('initialPasswordInput');
+        const initialPasswordError = document.getElementById('initialPasswordError');
 
-  function openModal() {
-    fileModal.classList.add('active');
-  }
+        const docxPasswordModal = document.getElementById('docxPasswordModal');
+        const docxPasswordInput = document.getElementById('docxPasswordInput');
+        const docxPasswordError = document.getElementById('docxPasswordError');
 
-  function closeModal() {
-    fileModal.classList.remove('active');
-    modalBody.innerHTML = ''; // Xóa nội dung cũ của modal khi đóng
-  }
-
-  modalCloseBtn.addEventListener('click', closeModal);
-  fileModal.addEventListener('click', (event) => { // Đóng modal khi nhấp vào overlay
-    if (event.target === fileModal) {
-      closeModal();
-    }
-  });
-
-  fileItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const fileType = item.dataset.fileType;
-      const fileName = item.dataset.fileName;
-      const requiresPassword = item.dataset.requiresPassword === 'true';
-
-      modalTitle.textContent = fileName; // Đặt tiêu đề modal là tên file
-
-      if (requiresPassword) {
-        showPasswordPrompt(fileName);
-      } else {
-        displayFileContent(fileType, fileName);
-      }
-    });
-  });
-
-  function displayFileContent(fileType, fileName) {
-    modalBody.innerHTML = ''; // Xóa nội dung cũ
-    switch (fileType) {
-      case 'image':
-        // Sử dụng placeholder image vì không có ảnh thực tế
-        const img = document.createElement('img');
-        img.src = `https://placehold.co/400x300/E6E6E6/666666?text=${encodeURIComponent(fileName)}`;
-        img.alt = fileName;
-        modalBody.appendChild(img);
-        break;
-      case 'text':
-        const pText = document.createElement('p');
-        pText.textContent = `Đi lại, sử dụng thiết bị đổi giọng (giọng địa phương?), nhận tiền gửi ra nước ngoài, và kiêu ngạo`;
-        modalBody.appendChild(pText);
-        break;
-      case 'docx': // Trường hợp này là sau khi đã nhập đúng mật khẩu
-        const pDocx = document.createElement('p');
-        pDocx.textContent = `Đây là nội dung của tài liệu "${fileName}" sau khi nhập mật khẩu.\n\"${ROSA_MESSAGE}".`;
-        modalBody.appendChild(pDocx);
-        break;
-      default:
-        const pDefault = document.createElement('p');
-        pDefault.textContent = `Không thể hiển thị loại tệp này (${fileName}).`;
-        modalBody.appendChild(pDefault);
-    }
-    openModal();
-  }
-
-  function showPasswordPrompt(fileNameForDocx) {
-    modalBody.innerHTML = `
-      <p>Tệp "${fileNameForDocx}" yêu cầu mật khẩu để mở.</p>
-      <input type="password" id="passwordInput" placeholder="Nhập mật khẩu">
-      <button id="submitPasswordBtn">Mở</button>
-      <div id="passwordErrorMsg" class="password-error"></div>
-    `;
-
-    const passwordInput = document.getElementById('passwordInput');
-    const submitPasswordBtn = document.getElementById('submitPasswordBtn');
-    const passwordErrorMsg = document.getElementById('passwordErrorMsg');
-
-    submitPasswordBtn.addEventListener('click', () => {
-      if (passwordInput.value === CORRECT_PASSWORD) {
-        passwordErrorMsg.textContent = '';
-        displayFileContent('docx', fileNameForDocx); // Hiển thị nội dung docx
-      } else {
-        passwordErrorMsg.textContent = 'Mật khẩu không đúng. Vui lòng thử lại.';
-        passwordInput.focus();
-      }
-    });
-    // Cho phép nhấn Enter để submit mật khẩu
-    passwordInput.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault(); // Ngăn hành vi mặc định của Enter (nếu có)
-            submitPasswordBtn.click(); // Kích hoạt sự kiện click của nút Mở
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
         }
-    });
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Initial Password Check
+        function checkInitialPassword() {
+            if (initialPasswordInput.value === INITIAL_PASSWORD) {
+                initialPasswordOverlay.style.display = 'none';
+                desktop.style.display = 'block';
+            } else {
+                initialPasswordError.textContent = 'Mật khẩu không đúng. Vui lòng thử lại.';
+                initialPasswordInput.value = '';
+            }
+        }
+        // Allow Enter key for initial password
+        initialPasswordInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                checkInitialPassword();
+            }
+        });
 
 
-    openModal();
-    passwordInput.focus(); // Tự động focus vào ô mật khẩu
-  }
+        // Modal Controls
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
 
-  // Đóng modal bằng phím Escape
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && fileModal.classList.contains('active')) {
-      closeModal();
-    }
-  });
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if (modalId === 'docxPasswordModal') {
+                docxPasswordInput.value = ''; // Clear password field
+                docxPasswordError.textContent = ''; // Clear error message
+            }
+        }
 
-</script>
+        // File Opening Functions
+        function openPicture() {
+            openModal('pictureModal');
+        }
+
+        function openTextFile() {
+            openModal('textFileModal');
+        }
+
+        function requestDocxPassword() {
+            openModal('docxPasswordModal');
+            // Focus on password input when modal opens
+            setTimeout(() => docxPasswordInput.focus(), 50);
+        }
+
+        function checkDocxPassword() {
+            if (docxPasswordInput.value === DOCX_PASSWORD) {
+                closeModal('docxPasswordModal');
+                openModal('docxContentModal');
+                docxPasswordInput.value = ''; // Clear password
+                docxPasswordError.textContent = '';
+            } else {
+                docxPasswordError.textContent = 'Mật khẩu file không đúng.';
+                docxPasswordInput.value = '';
+            }
+        }
+        // Allow Enter key for DOCX password
+        docxPasswordInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                checkDocxPassword();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal');
+                modals.forEach(modal => {
+                    if (modal.style.display === 'flex') {
+                        // Prioritize closing the DOCX password modal if it's open on top of another
+                        if (docxPasswordModal.style.display === 'flex') {
+                           closeModal('docxPasswordModal');
+                        } else if (initialPasswordOverlay.style.display !== 'flex') { // Don't close initial if it's the one active
+                            closeModal(modal.id);
+                        }
+                    }
+                });
+            }
+        });
+
+    </script>
 
 </body>
 </html>

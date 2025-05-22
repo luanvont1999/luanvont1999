@@ -1,0 +1,242 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden; /* Ngăn cuộn trang */
+  background-color: #0078D4; /* Màu nền desktop mặc định của Windows */
+}
+
+#login-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #0078D4; /* Hoặc một hình nền đăng nhập */
+  color: white;
+  text-align: center;
+}
+
+.login-box {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.login-box h2 {
+  margin-bottom: 20px;
+}
+
+.login-box input {
+  padding: 10px;
+  margin-bottom: 15px;
+  width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-box button {
+  padding: 10px 20px;
+  background-color: #0078D4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-box button:hover {
+  background-color: #005a9e;
+}
+
+.error-message {
+  color: #ff4d4d;
+  font-size: 0.9em;
+  margin-top: 10px;
+}
+
+
+#desktop {
+  width: 100vw;
+  height: 100vh;
+  background: url('windows_wallpaper.jpg') no-repeat center center fixed; /* Thay bằng hình nền desktop của bạn */
+  background-size: cover;
+  position: relative;
+}
+
+.desktop-icons {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.icon {
+  margin: 10px;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  width: 80px; /* Độ rộng của icon và text */
+}
+
+.icon img {
+  width: 48px; /* Kích thước icon */
+  height: 48px;
+  margin-bottom: 5px;
+}
+
+.icon span {
+  display: block;
+  font-size: 12px;
+  word-wrap: break-word; /* Cho phép xuống dòng nếu tên file dài */
+  background-color: rgba(0,0,0,0.3); /* Nền nhẹ cho text để dễ đọc */
+  padding: 2px;
+  border-radius: 3px;
+}
+
+#taskbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background-color: #242424; /* Màu taskbar tối */
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+#start-button {
+  background-color: #0078D4;
+  padding: 0 15px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+#start-button:hover {
+  background-color: #005a9e;
+}
+
+#clock {
+  margin-left: auto; /* Đẩy đồng hồ sang phải */
+  padding-right: 10px;
+  font-size: 14px;
+}
+
+/* Modal styles */
+.modal {
+  display: none; /* Ẩn theo mặc định */
+  position: fixed; /* Ở lại vị trí cố định */
+  z-index: 1001; /* Nằm trên các element khác */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Cho phép cuộn nếu nội dung dài */
+  background-color: rgba(0,0,0,0.4); /* Nền mờ */
+  display: flex; /* Sử dụng flex để căn giữa */
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  border: 1px solid #888;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+  animation-name: animatetop;
+  animation-duration: 0.4s;
+  border-radius: 5px; /* Bo góc nhẹ */
+}
+
+/* Animation cho modal */
+@keyframes animatetop {
+  from {top: -300px; opacity: 0}
+  to {top: 0; opacity: 1}
+}
+
+.window-style {
+  width: 60%; /* Có thể điều chỉnh */
+  max-width: 700px;
+  min-height: 300px; /* Chiều cao tối thiểu */
+  display: flex;
+  flex-direction: column;
+}
+
+.title-bar {
+  padding: 8px 12px;
+  background-color: #0078D4; /* Màu thanh tiêu đề */
+  color: white;
+  cursor: move; /* Thêm con trỏ di chuyển (chưa có chức năng kéo thả) */
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.close-button {
+  background-color: #E81123; /* Màu nút đóng Windows */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 2px;
+}
+.close-button:hover {
+  background-color: #c30011;
+}
+
+#displayed-image {
+  max-width: 100%;
+  max-height: calc(80vh - 50px); /* Chiều cao tối đa của ảnh, trừ đi chiều cao title bar */
+  display: block;
+  margin: auto;
+  padding: 10px;
+  object-fit: contain;
+}
+
+#text-content, #docx-content {
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap; /* Giữ nguyên định dạng và xuống dòng */
+  overflow-y: auto; /* Thêm thanh cuộn nếu nội dung dài */
+  flex-grow: 1; /* Cho phép phần nội dung co giãn */
+  background-color: #fff; /* Nền trắng cho nội dung text */
+  color: #000;
+}
+
+.password-prompt-content {
+  padding: 20px;
+  text-align: center;
+  background-color: #fff;
+  color: #000;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.password-prompt-content input {
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.password-prompt-content button {
+  padding: 10px 15px;
+  background-color: #0078D4;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.password-prompt-content button:hover {
+  background-color: #005a9e;
+}
